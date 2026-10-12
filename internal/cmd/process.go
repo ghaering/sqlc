@@ -68,6 +68,14 @@ func processQuerySets(ctx context.Context, rp ResultProcessor, conf *config.Conf
 		errout := &stderrs[i]
 
 		grp.Go(func() error {
+			// fernglas: a panic in the compiler or code generator fails
+			// this package, not the process that runs sqlc in process.
+			defer func() {
+				if r := recover(); r != nil {
+					fmt.Fprintf(errout, "panic: %v\n", r)
+					errored = true
+				}
+			}()
 			combo := config.Combine(*conf, sql.SQL)
 			if sql.Plugin != nil {
 				combo.Codegen = *sql.Plugin
